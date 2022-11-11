@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>0x Instant Dev Environment</title>
+        <link rel="stylesheet" href="https://dexkit-storage.nyc3.digitaloceanspaces.com/zrx/v4/external.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.2/css/bulma.min.css" />
+        <script type="text/javascript" src="https://dexkit-storage.nyc3.digitaloceanspaces.com/zrx/v4/instant.js" charset="utf-8"></script>
+        <script type="text/javascript" src="https://unpkg.com/jsuri@1.3.1/Uri.js" charset="utf-8"></script>
+        <script type="text/javascript" src="https://unpkg.com/bignumber.js@4.1.0/bignumber.js" charset="utf-8"></script>
+        <style>
+            .flex-center {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100%;
+                width: 100%;
+            }
+
+            .flex-center--column {
+                flex-direction: column;
+            }
+
+            .button {
+                margin: 10px;
+            }
+
+            body {
+                margin: 0;
+                height: 100vh;
+                background-color: rgba(0, 0, 0, 0.2);
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="flex-center flex-center--column">
+            <div><button class="button is-large" onClick="renderWithUrlDefaults()">Open</button></div>
+            <div>
+                <button
+                    class="button is-danger"
+                    onClick="renderWithToken('0x1985365e9f78359a9b6ad760e32412f4a445e862')"
+                >
+                    Buy REP
+                </button>
+                <button
+                    class="button is-black"
+                    onClick="renderWithToken('0xe41d2489571d322189246dafa5ebde1f4699f498')"
+                >
+                    Buy ZRX
+                </button>
+                <button
+                    class="button is-info"
+                    onClick="renderWithToken('0x6810e776880c02933d47db1b9fc05908e5386b96')"
+                >
+                    Buy GNO
+                </button>
+            </div>
+        </div>
+        <div id="zeroExInstantContainer"></div>
+        <script>
+            // Simulate history
+            window.history.pushState({ page: 1 }, '0x Instant');
+            window.history.pushState({ page: 2 }, '0x Instant');
+            window.history.pushState({ page: 3 }, '0x Instant');
+            window.onpopstate = () => console.log("Integrator's onpopstate called");
+
+            const removeUndefined = obj => {
+                for (let k in obj) if (obj[k] === undefined) delete obj[k];
+                return obj;
+            };
+            BigNumber.config({
+                EXPONENTIAL_AT: 1000,
+                DECIMAL_PLACES: 78,
+            });
+          
+            const getRenderOptionsOverridesFromUrl = () => {
+                const queryParams = new Uri(window.location.search);
+                const feeRecipientOverride = queryParams.getQueryParamValue('feeRecipient');
+                const feePercentageOverride = +queryParams.getQueryParamValue('feePercentage');
+                let affiliateInfoOverride;
+                if (feeRecipientOverride !== undefined && feePercentageOverride !== undefined) {
+                    affiliateInfoOverride = {
+                        feeRecipient: feeRecipientOverride,
+                        feePercentage: feePercentageOverride,
+                    };
+                }
+                const renderOptionsOverrides = {
+                    chainId: +queryParams.getQueryParamValue('chainId') || undefined,
+                    defaultAmountTokenIn: +queryParams.getQueryParamValue('defaultAmountTokenIn') || undefined,
+                    tokenList: queryParams.getQueryParamValue('tokenList'),
+                    affiliateInfo: affiliateInfoOverride,
+                    shouldDisablePushToHistory: !!queryParams.getQueryParamValue('shouldDisablePushToHistory'),
+                    walletDisplayName: queryParams.getQueryParamValue('walletDisplayName') || undefined,
+                };
+                return renderOptionsOverrides;
+            };
+            const render = renderOptionsOverrides => {
+                const renderOptionsDefaults = {
+                    onClose: () => {
+                        console.log('0x Instant Closed');
+                    },
+                    onSuccess: (txHash) => {
+                        console.log(`Success! Transaction hash is: ${txHash}`)
+                    }
+                };
+                const renderOptions = Object.assign({}, renderOptionsDefaults, removeUndefined(renderOptionsOverrides));
+                zeroExInstant.render(renderOptions);
+            };
+            const renderWithUrlDefaults = (renderOptions = {}) => {
+                const finalOptions = {
+                    ...getRenderOptionsOverridesFromUrl(),
+                    ...renderOptions,
+                };
+                render(finalOptions);
+            };
+            renderWithUrlDefaults();
+            const renderWithAssetData = tokenAddress => {
+                renderWithUrlDefaults({
+                    defaultSelectedTokenIn:  tokenAddress,
+                });
+            };
+        </script>
+    </body>
+</html>
